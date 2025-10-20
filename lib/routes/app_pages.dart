@@ -1,8 +1,8 @@
 import 'package:get/get.dart';
 import 'package:news_app/bindings/home_binding.dart';
-import 'package:news_app/views/home_view.dart';
-import 'package:news_app/views/news_detail_view.dart';
-import 'package:news_app/views/splash_view.dart';
+import 'package:news_app/utils/views/home_view.dart';
+import 'package:news_app/utils/views/news_detail_view.dart';
+import 'package:news_app/utils/views/splash_view.dart';
 
 part 'app_routes.dart';
 
