@@ -213,20 +213,108 @@ class HomeView extends GetView<NewsController> {
         backgroundColor: Colors.white,
         strokeWidth: 3.0,
         onRefresh: controller.refreshNews,
-        child: ListView.separated(
-          padding: EdgeInsets.all(16),
-          itemCount: controller.articles.length,
-          separatorBuilder: (context, index) => SizedBox(height: 16),
-          itemBuilder: (context, index) {
-            final article = controller.articles[index];
-            return _EnhancedNewsCard(
-              article: article,
-              onTap: () => Get.toNamed(Routes.NEWS_DETAIL, arguments: article),
-            );
-          },
+        child: CustomScrollView(
+          slivers: [
+            // Headline Carousel Section
+            SliverToBoxAdapter(
+              child: _buildHeadlineCarousel(),
+            ),
+            
+            // Latest News Section Header
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
+              sliver: SliverToBoxAdapter(
+                child: Row(
+                  children: [
+                    Icon(Icons.new_releases_rounded, 
+                         color: AppColors.primary, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Latest News',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Spacer(),
+                    Text(
+                      '${controller.articles.length} articles',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // News List
+            SliverPadding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              sliver: SliverList.separated(
+                itemCount: controller.articles.length,
+                separatorBuilder: (context, index) => SizedBox(height: 16),
+                itemBuilder: (context, index) {
+                  final article = controller.articles[index];
+                  return _EnhancedNewsCard(
+                    article: article,
+                    onTap: () => Get.toNamed(Routes.NEWS_DETAIL, arguments: article),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       );
     });
+  }
+
+  Widget _buildHeadlineCarousel() {
+    final topArticles = controller.articles.take(5).toList();
+    
+    return Container(
+      height: 300,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(16, 20, 16, 12),
+            child: Row(
+              children: [
+                Icon(Icons.star_rounded, color: AppColors.primary, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Top Headlines',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: PageView.builder(
+              itemCount: topArticles.length,
+              controller: PageController(viewportFraction: 0.85),
+              padEnds: false,
+              itemBuilder: (context, index) {
+                final article = topArticles[index];
+                return _HeadlineCarouselCard(
+                  article: article,
+                  onTap: () => Get.toNamed(Routes.NEWS_DETAIL, arguments: article),
+                );
+              },
+            ),
+          ),
+          SizedBox(height: 16),
+        ],
+      ),
+    );
   }
 
   Widget _buildErrorWidget() {
@@ -525,6 +613,256 @@ class HomeView extends GetView<NewsController> {
   }
 }
 
+class _HeadlineCarouselCard extends StatelessWidget {
+  final dynamic article;
+  final VoidCallback onTap;
+
+  const _HeadlineCarouselCard({
+    required this.article,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 20,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              // Background Image
+              _buildCarouselImage(),
+              
+              // Gradient Overlay
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.8),
+                      Colors.transparent,
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+              // Bookmark Button
+              Positioned(
+                top: 12,
+                right: 12,
+                child: _CarouselBookmarkButton(article: article),
+              ),
+              
+              // Content
+              Padding(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    // Source and Time
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            _getSource(article),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        Icon(Icons.schedule_rounded, size: 14, color: Colors.white70),
+                        SizedBox(width: 4),
+                        Text(
+                          _getTimeAgo(article),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+                    
+                    // Title
+                    Text(
+                      _getTitle(article),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 8),
+                    
+                    // Description
+                    Text(
+                      _getDescription(article),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.9),
+                        height: 1.4,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCarouselImage() {
+    final imageUrl = article.urlToImage;
+
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      return Image.network(
+        imageUrl,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+        alignment: Alignment.topCenter,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withOpacity(0.3),
+                  Color(0xFF2E3192).withOpacity(0.3),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 3,
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return _buildCarouselPlaceholder();
+        },
+      );
+    } else {
+      return _buildCarouselPlaceholder();
+    }
+  }
+
+  Widget _buildCarouselPlaceholder() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary,
+            Color(0xFF2E3192),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.article_rounded,
+          color: Colors.white.withOpacity(0.8),
+          size: 60,
+        ),
+      ),
+    );
+  }
+
+  String _getSource(dynamic article) {
+    return article.source?.name ?? 'Unknown Source';
+  }
+
+  String _getTimeAgo(dynamic article) {
+    return article.publishedAt != null ? 'a day ago' : 'Recently';
+  }
+
+  String _getTitle(dynamic article) {
+    return article.title ?? 'No Title';
+  }
+
+  String _getDescription(dynamic article) {
+    return article.description ?? 'No description available for this news article.';
+  }
+}
+
+class _CarouselBookmarkButton extends StatelessWidget {
+  final dynamic article;
+
+  const _CarouselBookmarkButton({required this.article});
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<NewsController>();
+    return Obx(() {
+      final isSaved = controller.isBookmarked(article);
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => controller.toggleBookmark(article),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.35),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(
+              isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+        ),
+      );
+    });
+  }
+}
+
+// Keep your existing _EnhancedCategoriesHeaderDelegate, _EnhancedCategoryChip, 
+// and _EnhancedNewsCard classes exactly as they are...
+
 class _EnhancedCategoriesHeaderDelegate extends SliverPersistentHeaderDelegate {
   final NewsController controller;
 
@@ -533,7 +871,7 @@ class _EnhancedCategoriesHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      height: 95,
+      height: 300,
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
@@ -623,9 +961,9 @@ class _EnhancedCategoriesHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  double get maxExtent => 95;
+  double get maxExtent => 110;
   @override
-  double get minExtent => 95;
+  double get minExtent => 110;
   @override
   bool shouldRebuild(_) => true;
 }
@@ -678,7 +1016,7 @@ class _EnhancedCategoryChip extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 15,
-              height: 1.1, // ⬅️ ini memastikan teks benar-benar center
+              height: 1.1,
               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
               color: isSelected ? Colors.white : AppColors.textPrimary,
               letterSpacing: 0.3,
@@ -689,6 +1027,8 @@ class _EnhancedCategoryChip extends StatelessWidget {
     );
   }
 }
+
+ 
 
 class _EnhancedNewsCard extends StatelessWidget {
   final dynamic article;
@@ -721,8 +1061,17 @@ class _EnhancedNewsCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Improved image section
-              _buildImageSection(),
+              // Improved image section + bookmark overlay
+              Stack(
+                children: [
+                  _buildImageSection(),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: _CarouselBookmarkButton(article: article),
+                  ),
+                ],
+              ),
               Padding(
                 padding: EdgeInsets.all(18),
                 child: Column(
@@ -848,13 +1197,14 @@ class _EnhancedNewsCard extends StatelessWidget {
         ),
         child: Image.network(
           imageUrl,
-          height: 160,
+          height: 240,
           width: double.infinity,
           fit: BoxFit.cover,
+          alignment: Alignment.topCenter,
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
             return Container(
-              height: 160,
+              height: 800,
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -886,7 +1236,7 @@ class _EnhancedNewsCard extends StatelessWidget {
 
   Widget _buildPlaceholderImage() {
     return Container(
-      height: 160,
+      height: 200,
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(

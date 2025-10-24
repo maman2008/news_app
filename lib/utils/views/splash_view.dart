@@ -184,7 +184,7 @@ class _SplashViewState extends State<SplashView>
                         child: Column(
                           children: [
                             Text(
-                              'News App',
+                              'NewsDaily',
                               style: TextStyle(
                                 fontSize: 40,
                                 fontWeight: FontWeight.bold,

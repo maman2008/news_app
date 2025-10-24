@@ -11,6 +11,7 @@ class NewsController extends GetxController {
   final _articles = <NewsArticle>[].obs;
   final _selectedCategory = 'general'.obs;
   final _error = ''.obs;
+  final _bookmarks = <NewsArticle>[].obs;
 
   // Getters
   bool get isLoading => _isLoading.value;
@@ -18,6 +19,7 @@ class NewsController extends GetxController {
   String get selectedCategory => _selectedCategory.value;
   String get error => _error.value;
   List<String> get categories => Constants.categories;
+  List<NewsArticle> get bookmarks => _bookmarks;
 
   @override
   void onInit() {
@@ -77,5 +79,25 @@ class NewsController extends GetxController {
     } finally {
       _isLoading.value = false;
     }
+  }
+
+  // Bookmarking helpers
+  bool isBookmarked(NewsArticle article) {
+    return _bookmarks.any((a) => a.url == article.url);
+  }
+
+  void toggleBookmark(NewsArticle article) {
+    final exists = isBookmarked(article);
+    if (exists) {
+      _bookmarks.removeWhere((a) => a.url == article.url);
+      Get.snackbar('Removed', 'Removed from bookmarks', snackPosition: SnackPosition.BOTTOM);
+    } else {
+      _bookmarks.add(article);
+      Get.snackbar('Bookmarked', 'Saved to bookmarks', snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  void removeBookmark(NewsArticle article) {
+    _bookmarks.removeWhere((a) => a.url == article.url);
   }
 }
